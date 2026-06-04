@@ -40,7 +40,7 @@ graph_names = [
 
 
 if __name__ == "__main__":
-    graph_dir = "graphs"
+    graph_dir = "graph"
     solution_dir = "solutions"
 
     if not os.path.exists(graph_dir):
@@ -62,8 +62,8 @@ if __name__ == "__main__":
         # graph_kernel, k, solution = kernelize(...)
 
         # TODO: implement solutions
-        solution = two_approx(G_edge_list)
-        # solution = logn_approx(G_edge_list)
+        # solution = two_approx(G_edge_list)
+        solution = logn_approx(G_edge_list)
 
         if not solution:
             continue

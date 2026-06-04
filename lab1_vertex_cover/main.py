@@ -2,6 +2,7 @@ import time
 import os
 
 from vertex_cover.brute_force import brute_force
+from vertex_cover.VC import VC
 from vertex_cover.types import EdgeList, VertexSets
 from utils.dimacs import *
 
@@ -62,7 +63,8 @@ if __name__ == "__main__":
             # graph_kernel, k, solution = kernelize(...)
 
             # TODO: implement solutions
-            solution = brute_force(..., k)
+            # solution = brute_force(G, k)
+            solution = VC(G_edge_list, k, set() )
 
             if not solution:
                 continue
