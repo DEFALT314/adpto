@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#define N 50
-#define MAX 400
+#define N 100
+#define MAX 1000
 #define true 1
 #define false 0
 int W, H, L;
@@ -21,99 +21,65 @@ Point map[4] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
 int cats_n;
 Point cats[MAX];
 int lasers_n;
-struct
-{
-    int x, y;
-    Dir dir;
-} lasers[MAX];
-int lit_n;
-Point lit_pos[MAX];
-int lit_map[N][N];
+int lit_map[N][N] = {0};
 int left_mirror[4] = {[UP] = RIGHT, [RIGHT] = UP, [DOWN] = LEFT, [LEFT] = DOWN};
 int right_mirror[4] = {[UP] = LEFT, [RIGHT] = DOWN, [DOWN] = RIGHT, [LEFT] = UP};
-
-int simulate()
+int visited[N][N][4] = {0};
+int solve(int mirror_n, Point pos, Dir dir)
 {
-    int visited[N][N][4] = {0};
-    memset(lit_map, 0, sizeof(lit_map));
-    lit_n = 0;
-    for (int i = 0; i < lasers_n; i++)
-    {
-        int x = lasers[i].x + map[lasers[i].dir].x;
-        int y = lasers[i].y + map[lasers[i].dir].y;
-        int dir = lasers[i].dir;
-        while (x >= 0 && x < W && y >= 0 && y < H && !visited[y][x][dir])
+    if (pos.x < 0 || pos.x >= W || pos.y < 0 || pos.y >= H || visited[pos.y][pos.x][dir] || board[pos.y][pos.x] == '#'){
+        for (int i = 0; i < cats_n; i++)
         {
-            visited[y][x][dir] = 1;
-            if (board[y][x] == '#')
+            if (!lit_map[cats[i].y][cats[i].x])
             {
-                break;
+                return false;
             }
-            if (!lit_map[y][x])
-            {
-                lit_map[y][x] = 1;
-                if (board[y][x] == '.')
-                {
-                    lit_pos[lit_n].x = x;
-                    lit_pos[lit_n].y = y;
-                    lit_n++;
-                }
-            }
-            if (board[y][x] == '/')
-            {
-                dir = left_mirror[dir];
-            }
-            else if (board[y][x] == '\\')
-            {
-                dir = right_mirror[dir];
-            }
-            x += map[dir].x;
-            y += map[dir].y;
         }
-    }
-    for (int i = 0; i < cats_n; i++)
-    {
-        if (!lit_map[cats[i].y][cats[i].x])
-        {
-            return false;
-        }
-    }
-    return true;
-}
-int solve(int mirror_n)
-{
-    int is_solved = simulate();
-    if (is_solved)
-    {
         return true;
     }
-    if (mirror_n == 0)
-    {
-        return false;
-    }
-    Point candidates[MAX];
-    int n = lit_n;
-    memcpy(candidates, lit_pos, sizeof(Point) * lit_n);
-    for (int i = 0; i < n; i++)
-    {
-        board[candidates[i].y][candidates[i].x] = '/';
-        if (solve(mirror_n - 1))
+    int is_new = lit_map[pos.y][pos.x] == false;
+    int can_place_mirror = mirror_n && board[pos.y][pos.x] == '.';
+    visited[pos.y][pos.x][dir] = true;
+    lit_map[pos.y][pos.x] = true;
+    Point new_pos;
+    int new_dir= dir;
+    if(can_place_mirror)
+    { 
+        new_dir = right_mirror[dir];
+        Point new_pos = {pos.x + map[new_dir].x, pos.y + map[new_dir].y};
+        board[pos.y][pos.x] = '\\';
+        if (solve(mirror_n - 1, new_pos, new_dir ))
         {
             return true;
         }
-        board[candidates[i].y][candidates[i].x] = '\\';
-        if (solve(mirror_n - 1))
+        new_dir = left_mirror[dir];
+        new_pos = (Point){pos.x + map[new_dir].x, pos.y + map[new_dir].y};
+        board[pos.y][pos.x] = '/';
+        if (solve(mirror_n - 1, new_pos, new_dir ))
         {
             return true;
         }
-        board[candidates[i].y][candidates[i].x] = '.';
+        board[pos.y][pos.x] = '.';
     }
+    new_dir = dir;
+    if (board[pos.y][pos.x] == '/')
+        new_dir = left_mirror[dir];
+    else if (board[pos.y][pos.x] == '\\')
+        new_dir = right_mirror[dir];
+    new_pos = (Point){pos.x + map[new_dir].x, pos.y + map[new_dir].y};
+    if(solve(mirror_n, new_pos, new_dir))
+        return true;
+    if (is_new)
+        lit_map[pos.y][pos.x] = false;
+    visited[pos.y][pos.x][dir] = false;
     return false;
 }
 
 int main()
 {
     scanf("%d %d %d\n", &W, &H, &L);
+    Point laser_pos;
+    Dir laser_dir;
     for (int i = 0; i < H; i++)
     {
         for (int j = 0; j < W; j++)
@@ -129,34 +95,26 @@ int main()
                 cats_n++;
                 break;
             case 'A':
-                lasers[lasers_n].x = j;
-                lasers[lasers_n].y = i;
-                lasers[lasers_n].dir = UP;
-                lasers_n++;
+                laser_pos = (Point){j,i};
+                laser_dir = UP;
                 break;
             case 'V':
-                lasers[lasers_n].x = j;
-                lasers[lasers_n].y = i;
-                lasers[lasers_n].dir = DOWN;
-                lasers_n++;
+                laser_pos = (Point){j,i};
+                laser_dir = DOWN;
                 break;
             case '<':
-                lasers[lasers_n].x = j;
-                lasers[lasers_n].y = i;
-                lasers[lasers_n].dir = LEFT;
-                lasers_n++;
+                laser_pos = (Point){j,i};
+                laser_dir = LEFT;
                 break;
             case '>':
-                lasers[lasers_n].x = j;
-                lasers[lasers_n].y = i;
-                lasers[lasers_n].dir = RIGHT;
-                lasers_n++;
+                laser_pos = (Point){j,i};
+                laser_dir = RIGHT;
                 break;
             }
         }
 
     }
-    solve(L);
+    solve(L, laser_pos, laser_dir);
     printf("%d %d %d\n", W, H, L);
     for (int i = 0; i < H; i++)
     {
